@@ -2,49 +2,69 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Load the image
-image_path = r"C:\Users\wengy\Downloads\round 11.png"
-image = cv2.imread(image_path)
+cap = cv2.VideoCapture(0)
 
-height, width = image.shape[:2]
+if not cap.isOpened():
+    print("Error: Could not open video stream.")
+    exit()
 
-angle = 41
+while True:
+    # Capture frame-by-frame
+    ret, image = cap.read()
+    
+    if not ret:
+        print("Error: Could not read frame.")
+        break
 
-box_height =  2/3*image.shape[0]
+    height, width = image.shape[:2]
 
-deviation = width//2 - (np.tan(angle*np.pi/180) * (height - box_height))
+    angle = 35
 
-# print(f"BH: {box_height}, Deviation: {deviation}")
+    box_height =  2/3*image.shape[0]
 
-src = np.float32([
-    [width//2 + deviation, box_height], #top right
-    [width//2 - deviation, box_height], #top left
-    [0, height], #bottom left
-    [width, height] #bottom right
-])
+    deviation = width//2 - (np.tan(angle*np.pi/180) * (height - box_height))
 
-dst = np.float32([
-    [width, 0], #top right
-    [0, 0], #top left
-    [0, height], #bottom left
-    [width, height] #bottom right
-])
-matrix = cv2.getPerspectiveTransform(src, dst)
-warped = cv2.warpPerspective(image, matrix, (width, height))
+    # print(f"BH: {box_height}, Deviation: {deviation}")
+
+    src = np.float32([
+        [width//2 + deviation, box_height], #top right
+        [width//2 - deviation, box_height], #top left
+        [0, height], #bottom left
+        [width, height] #bottom right
+    ])
+
+    dst = np.float32([
+        [width, 0], #top right
+        [0, 0], #top left
+        [0, height], #bottom left
+        [width, height] #bottom right
+    ])
+    matrix = cv2.getPerspectiveTransform(src, dst)
+    warped = cv2.warpPerspective(image, matrix, (width, height))
 
 
-# Convert images for display
-original_display = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-warped_display = cv2.cvtColor(warped, cv2.COLOR_BGR2RGB)
+    # Convert images for display
+    original_display = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    warped_display = cv2.cvtColor(warped, cv2.COLOR_BGR2RGB)
 
-# Plot the original and transformed images
-plt.figure(figsize=(20, 10))
-plt.subplot(1, 2, 1)
-plt.imshow(original_display)
-plt.title('Original Image with Source Points')
-plt.scatter(src[:, 0], src[:, 1], color='red') # Marking the points
+    # Plot the original and transformed images
+    plt.figure(figsize=(20, 10))
+    plt.subplot(1, 2, 1)
+    plt.imshow(original_display)
+    plt.title('Original Image with Source Points')
+    plt.scatter(src[:, 0], src[:, 1], color='red') # Marking the points
 
-plt.subplot(1, 2, 2)
-plt.imshow(warped_display)
-plt.title('Warped Image')
-plt.show()
+    plt.subplot(1, 2, 2)
+    plt.imshow(warped_display)
+    plt.title('Warped Image')
+    plt.show()
+
+
+    # Display the resulting frame
+    #cv2.imshow('Live Video Stream', warped_display)
+    #cv2.imshow('Live Video Stream', original_display)
+
+    # Break the loop on 'q' key press
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+

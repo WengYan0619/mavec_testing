@@ -576,99 +576,114 @@ def finding_lane_center(warped_image, positive_lane_center, negative_lane_center
 # offset, visualized_image = finding_lane_center(warped_image, positive_lane_center, negative_lane_center)
 # Example usage:
 # x, y, plot_points, out_img = sliding_window_flexible_lane(warped_image)
-def process_image(image_path):
+def process_image():
     # Read the image
-    image = cv2.imread(image_path)
-    if image is None:
-        print(f"Failed to read image: {image_path}")
-        return
-    exit_condition = 0
-    if exit_condition == 0:
-        height, width = image.shape[:2]
-        
-        # Create a mask for the trapezoidal cut-off
-        mask = np.ones_like(image, dtype=np.uint8)
-        
-        # Calculate start points for top and bottom
-        top_start = int(2.5 * width // 4)
-        bottom_start = int(3 * width // 4)
-        
-        # Create a gradient for the cut-off line
-        x = np.arange(height)
-        cut_off_line = np.int32(np.interp(x, [0, height-1], [top_start, bottom_start]))
-        
-        # Apply the mask
-        for i in range(height):
-            mask[i, cut_off_line[i]:] = 0
-        
-        # Apply the mask to the current frame
-        image = image * mask
-    # Apply perspective warp
-    warped = perspective_warp(image)
+    cap = cv2.VideoCapture(0)
 
-    # Apply thresholding
-    binary = threshold(warped)
-    #white_pixels, count, poly_coeffs, output_image = detect_white_pixels_and_fit_polynomial(binary)
-    #x, y, fitx, ploty, out_img = sliding_window_single_lane(binary)
-    #white_pixel_position = analyze_white_pixel_orientation(binary)
-    x, y, plot_points, out_img,positive_lane_center,negative_lane_center,is_vertical = sliding_window_flexible_lane(binary)
-    offset, visualized_image = finding_lane_center(binary, positive_lane_center, negative_lane_center, is_vertical)
-    #print(f"White pixel position: {white_pixel_position}")
-    overlay_image = cv2.cvtColor(binary, cv2.COLOR_GRAY2RGB)
-    # Apply sliding window for top lane detection
-    #lanex, laney, plotx, ploty, out_img_horizontal, lane_fit = sliding_window_top(binary)
-    #leftx, lefty, rightx, righty, left_fitx, right_fitx, ploty, out_img = sliding_window(binary)
+    if not cap.isOpened():
+        print("Error: Could not open video stream.")
+        exit()
 
-    
-    # height, width = binary.shape[:2]
-    # lane_center = (left_fitx + right_fitx) // 2
-    # robot_pos = width // 2
-    # offset = (lane_center[-1] - robot_pos) / (width/2)
-    
-    # # Visualize
-    # # for y, x in zip(ploty, lane_center):
-    # #     cv2.circle(overlay_image, (int(x), int(y)), 2, (0, 255, 0), -1)
-    
-    # if lane_fit is not None:
-    #     height, width = binary.shape[:2]
-    #     plotx = np.linspace(0, width-1, width)
+    while True:
+        # Capture frame-by-frame
+        ret, image = cap.read()
         
-    #     # Calculate lane position
-    #     lane_fity = lane_fit[0]*plotx**2 + lane_fit[1]*plotx + lane_fit[2]
+        if not ret:
+            print("Error: Could not read frame.")
+            break
 
-    #     # Convert 15cm to pixels
-    #     cm_to_pixel_ratio = 10  # Assuming 1 cm = 10 pixels, adjust this value
-    #     pixels_to_shift = 15 * cm_to_pixel_ratio
+        # image = cv2.imread(image_path)
+        # if image is None:
+        #     print(f"Failed to read image: {image_path}")
+        #     return
+        exit_condition = 0
+        if exit_condition == 0:
+            height, width = image.shape[:2]
+            
+            # Create a mask for the trapezoidal cut-off
+            mask = np.ones_like(image, dtype=np.uint8)
+            
+            # Calculate start points for top and bottom
+            top_start = int(2.5 * width // 4)
+            bottom_start = int(3 * width // 4)
+            
+            # Create a gradient for the cut-off line
+            x = np.arange(height)
+            cut_off_line = np.int32(np.interp(x, [0, height-1], [top_start, bottom_start]))
+            
+            # Apply the mask
+            for i in range(height):
+                mask[i, cut_off_line[i]:] = 0
+            
+            # Apply the mask to the current frame
+            image = image * mask
+        # Apply perspective warp
+        warped = perspective_warp(image)
+
+        # Apply thresholding
+        binary = threshold(warped)
+        #white_pixels, count, poly_coeffs, output_image = detect_white_pixels_and_fit_polynomial(binary)
+        #x, y, fitx, ploty, out_img = sliding_window_single_lane(binary)
+        #white_pixel_position = analyze_white_pixel_orientation(binary)
+        x, y, plot_points, out_img,positive_lane_center,negative_lane_center,is_vertical = sliding_window_flexible_lane(binary)
+        offset, visualized_image = finding_lane_center(binary, positive_lane_center, negative_lane_center, is_vertical)
+        #print(f"White pixel position: {white_pixel_position}")
+        overlay_image = cv2.cvtColor(binary, cv2.COLOR_GRAY2RGB)
+        # Apply sliding window for top lane detection
+        #lanex, laney, plotx, ploty, out_img_horizontal, lane_fit = sliding_window_top(binary)
+        #leftx, lefty, rightx, righty, left_fitx, right_fitx, ploty, out_img = sliding_window(binary)
+
         
-    #     # Calculate positive and negative lane centers
-    #     positive_lane_center = lane_fity + pixels_to_shift
-    #     negative_lane_center = lane_fity - pixels_to_shift
-
-    #     # Move robot (simulate movement and get visualization)
-    #     result_image, offset = move_robot(binary, lane_fit)
-
-    #     # Overlay lane centers on the result image
-    #     for x, y in zip(plotx, lane_fity):
-    #         cv2.circle(result_image, (int(x), int(y)), 2, (0, 255, 0), -1)
-    #     for x, y in zip(plotx, positive_lane_center):
-    #         cv2.circle(result_image, (int(x), int(y)), 2, (0, 0, 255), -1)
-    #     for x, y in zip(plotx, negative_lane_center):
-    #         cv2.circle(result_image, (int(x), int(y)), 2, (255, 0, 0), -1)
-
-    #     # Display results
-    #     plt.figure(figsize=(20, 10))
-    #     plt.subplot(221), plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)), plt.title('Original Image')
-    #     plt.subplot(222), plt.imshow(binary, cmap='gray'), plt.title('Thresholded Warped Image')
-    #     plt.subplot(223), plt.imshow(out_img_horizontal), plt.title('Sliding Window Result')
-    #     plt.subplot(224), plt.imshow(cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB)), plt.title('Lane Detection Result')
-    #     plt.tight_layout()
-    #     plt.show()
+        # height, width = binary.shape[:2]
+        # lane_center = (left_fitx + right_fitx) // 2
+        # robot_pos = width // 2
+        # offset = (lane_center[-1] - robot_pos) / (width/2)
         
-    cv2.imshow("Overlay Image", overlay_image)
+        # # Visualize
+        # # for y, x in zip(ploty, lane_center):
+        # #     cv2.circle(overlay_image, (int(x), int(y)), 2, (0, 255, 0), -1)
+        
+        # if lane_fit is not None:
+        #     height, width = binary.shape[:2]
+        #     plotx = np.linspace(0, width-1, width)
+            
+        #     # Calculate lane position
+        #     lane_fity = lane_fit[0]*plotx**2 + lane_fit[1]*plotx + lane_fit[2]
+
+        #     # Convert 15cm to pixels
+        #     cm_to_pixel_ratio = 10  # Assuming 1 cm = 10 pixels, adjust this value
+        #     pixels_to_shift = 15 * cm_to_pixel_ratio
+            
+        #     # Calculate positive and negative lane centers
+        #     positive_lane_center = lane_fity + pixels_to_shift
+        #     negative_lane_center = lane_fity - pixels_to_shift
+
+        #     # Move robot (simulate movement and get visualization)
+        #     result_image, offset = move_robot(binary, lane_fit)
+
+        #     # Overlay lane centers on the result image
+        #     for x, y in zip(plotx, lane_fity):
+        #         cv2.circle(result_image, (int(x), int(y)), 2, (0, 255, 0), -1)
+        #     for x, y in zip(plotx, positive_lane_center):
+        #         cv2.circle(result_image, (int(x), int(y)), 2, (0, 0, 255), -1)
+        #     for x, y in zip(plotx, negative_lane_center):
+        #         cv2.circle(result_image, (int(x), int(y)), 2, (255, 0, 0), -1)
+
+        #     # Display results
+        #     plt.figure(figsize=(20, 10))
+        #     plt.subplot(221), plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)), plt.title('Original Image')
+        #     plt.subplot(222), plt.imshow(binary, cmap='gray'), plt.title('Thresholded Warped Image')
+        #     plt.subplot(223), plt.imshow(out_img_horizontal), plt.title('Sliding Window Result')
+        #     plt.subplot(224), plt.imshow(cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB)), plt.title('Lane Detection Result')
+        #     plt.tight_layout()
+        #     plt.show()
+            
+        cv2.imshow("Overlay Image", overlay_image)
+        
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
 # Main execution
 if __name__ == "__main__":
-    image_path = r"C:\Users\wengy\Downloads\7.png"  # Replace with your image path
-    process_image(image_path)
+    #image_path = r"C:\Users\wengy\Downloads\7.png"  # Replace with your image path
+    process_image()
